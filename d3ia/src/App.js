@@ -1,25 +1,54 @@
-import logo from "./logo.svg";
 import "./App.scss";
+import { retry } from "./utils/commonFunctions";
 
-function App() {
+import { lazy, useState, Suspense, useEffect } from "react";
+import { Route, Redirect, Switch, useLocation } from "react-router-dom";
+
+const Home = lazy(() => retry(() => import("./components/Home")));
+
+const App = () => {
+  const [showLanguageSwitcher] = useState(false);
+  const location = useLocation();
+
+  const pages = [
+    {
+      pageLink: "/",
+      view: Home,
+      displayName: "Home",
+      showInNavbar: true,
+    },
+  ];
+
+  useEffect(() => {
+    if (showLanguageSwitcher) {
+      // For Chrome, Firefox, IE and Opera
+      document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
+      // For Safari
+      document.body.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [showLanguageSwitcher]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <div className="App">
+        <Suspense fallback={<div />}>
+        </Suspense>
+        <Suspense fallback={<div />}>
+          <Switch location={location}>
+            {pages.map((page, index) => {
+              return (
+                  <Route
+                      exact
+                      path={page.pageLink}
+                      render={({match}) => <page.view />}
+                      key={index}
+                  />
+              );
+            })}
+            <Redirect to="/" />
+          </Switch>
+        </Suspense>
+      </div>
   );
-}
+};
 
 export default App;
