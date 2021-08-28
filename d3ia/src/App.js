@@ -3,11 +3,13 @@ import { retry } from "./utils/commonFunctions";
 
 import { lazy, useState, Suspense, useEffect } from "react";
 import { Route, Redirect, Switch, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
 
 const Home = lazy(() => retry(() => import("./components/Home")));
+const About = lazy(() => retry(() => import("./components/About")));
 
 const App = () => {
-  const [showLanguageSwitcher] = useState(false);
+  const [showLanguageSwitcher, setShowLanguageSwitcher] = useState(false);
   const location = useLocation();
 
   const pages = [
@@ -15,6 +17,12 @@ const App = () => {
       pageLink: "/",
       view: Home,
       displayName: "Home",
+      showInNavbar: true,
+    },
+    {
+      pageLink: "/about",
+      view: About,
+      displayName: "About",
       showInNavbar: true,
     },
   ];
@@ -29,25 +37,26 @@ const App = () => {
   }, [showLanguageSwitcher]);
 
   return (
-      <div className="App">
-        <Suspense fallback={<div />}>
-        </Suspense>
-        <Suspense fallback={<div />}>
-          <Switch location={location}>
-            {pages.map((page, index) => {
-              return (
-                  <Route
-                      exact
-                      path={page.pageLink}
-                      render={({match}) => <page.view />}
-                      key={index}
-                  />
-              );
-            })}
-            <Redirect to="/" />
-          </Switch>
-        </Suspense>
-      </div>
+    <div className="App">
+      <Suspense fallback={<div />}></Suspense>
+      <Navbar {...{ pages, showLanguageSwitcher, setShowLanguageSwitcher }} />
+
+      <Suspense fallback={<div />}>
+        <Switch location={location}>
+          {pages.map((page, index) => {
+            return (
+              <Route
+                exact
+                path={page.pageLink}
+                render={({ match }) => <page.view />}
+                key={index}
+              />
+            );
+          })}
+          <Redirect to="/" />
+        </Switch>
+      </Suspense>
+    </div>
   );
 };
 

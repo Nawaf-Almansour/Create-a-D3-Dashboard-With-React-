@@ -1,32 +1,29 @@
-import produce from 'immer';
-import {useState} from 'react';
-import {useUpdateEffect} from 'react-use';
-import useSWR from 'swr';
+import { useState, useEffect } from "react";
 
-export function useStickySWR(key, fetcher, swrOptions, ...args) {
-    const [options, setOptions] = useState(swrOptions);
+const OPTIONS = {
+  root: null,
+  rootMargin: "0px 0px 0px 0px",
+  threshold: 0,
+};
 
-    const {data, isValidating, error, ...rest} = useSWR(
-        key,
-        fetcher,
-        options,
-        ...args
-    );
+const useIsVisible = (elementRef) => {
+  const [isVisible, setIsVisible] = useState(false);
 
-    useUpdateEffect(() => {
-        setOptions(
-            produce(options, (draftOptions) => {
-                draftOptions.initialData = data;
-            })
-        );
-    }, [data]);
+  useEffect(() => {
+    if (elementRef.current) {
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.unobserve(elementRef.current);
+          }
+        });
+      }, OPTIONS);
+      observer.observe(elementRef.current);
+    }
+  }, [elementRef]);
 
-    return {
-        ...rest,
-        isValidating,
-        error,
-        data,
-    };
-}
+  return isVisible;
+};
 
-export default useStickySWR;
+export default useIsVisible;
