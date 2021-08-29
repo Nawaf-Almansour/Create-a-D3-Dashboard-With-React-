@@ -2,35 +2,35 @@ import {
   MINIGRAPH_LOOKBACK_DAYS,
   LEVEL_STATISTICS,
   STATISTIC_CONFIGS,
-} from "../constants";
+} from '../constants';
 import {
   getStatistic,
   getSaudiaDateYesterdayISO,
   parseSaudiaDate,
-} from "../utils/commonFunctions";
+} from '../utils/commonFunctions';
 
-import classnames from "classnames";
-import { max } from "d3-array";
-import { interpolatePath } from "d3-interpolate-path";
-import { scaleTime, scaleLinear } from "d3-scale";
-import { select } from "d3-selection";
-import { line, curveMonotoneX } from "d3-shape";
-import "d3-transition";
-import { formatISO, subDays } from "date-fns";
-import equal from "fast-deep-equal";
-import { memo, useCallback, useEffect, useRef, useMemo } from "react";
-import { useMeasure } from "react-use";
+import classnames from 'classnames';
+import {max} from 'd3-array';
+import {interpolatePath} from 'd3-interpolate-path';
+import {scaleTime, scaleLinear} from 'd3-scale';
+import {select} from 'd3-selection';
+import {line, curveMonotoneX} from 'd3-shape';
+import 'd3-transition';
+import {formatISO, subDays} from 'date-fns';
+import equal from 'fast-deep-equal';
+import {memo, useCallback, useEffect, useRef, useMemo} from 'react';
+import {useMeasure} from 'react-use';
 
 // Dimensions
-const margin = { top: 10, right: 10, bottom: 2, left: 10 };
+const margin = {top: 10, right: 10, bottom: 2, left: 10};
 const height = 75;
 const maxWidth = 120;
 
-function Minigraphs({ timeseries, date: timelineDate }) {
+function Minigraphs({timeseries, date: timelineDate}) {
   const refs = useRef([]);
   const endDate = timelineDate || getSaudiaDateYesterdayISO();
 
-  let [wrapperRef, { width }] = useMeasure();
+  let [wrapperRef, {width}] = useMeasure();
   width = Math.min(width, maxWidth);
 
   const dates = useMemo(() => {
@@ -41,14 +41,14 @@ function Minigraphs({ timeseries, date: timelineDate }) {
 
     const cutOffDateLower = formatISO(
       subDays(parseSaudiaDate(lastDate), MINIGRAPH_LOOKBACK_DAYS),
-      { representation: "date" }
+      {representation: 'date'}
     );
     return pastDates.filter((date) => date >= cutOffDateLower);
   }, [endDate, timeseries]);
 
   const getMinigraphStatistic = useCallback(
     (date, statistic) => {
-      return getStatistic(timeseries?.[date], "delta", statistic);
+      return getStatistic(timeseries?.[date], 'delta', statistic);
     },
     [timeseries]
   );
@@ -90,34 +90,34 @@ function Minigraphs({ timeseries, date: timelineDate }) {
 
       let pathLength;
       svg
-        .selectAll("path")
+        .selectAll('path')
         .data(T ? [dates] : [])
         .join(
           (enter) =>
             enter
-              .append("path")
-              .attr("fill", "none")
-              .attr("stroke", color + "99")
-              .attr("stroke-width", 2.5)
-              .attr("d", linePath)
-              .attr("stroke-dasharray", function () {
+              .append('path')
+              .attr('fill', 'none')
+              .attr('stroke', color + '99')
+              .attr('stroke-width', 2.5)
+              .attr('d', linePath)
+              .attr('stroke-dasharray', function () {
                 return (pathLength = this.getTotalLength());
               })
               .call((enter) =>
                 enter
-                  .attr("stroke-dashoffset", pathLength)
+                  .attr('stroke-dashoffset', pathLength)
                   .transition()
                   .delay(100)
                   .duration(2500)
-                  .attr("stroke-dashoffset", 0)
+                  .attr('stroke-dashoffset', 0)
               ),
           (update) =>
             update
-              .attr("stroke-dasharray", null)
+              .attr('stroke-dasharray', null)
               .transition()
               .duration(500)
-              .attrTween("d", function (date) {
-                const previous = select(this).attr("d");
+              .attrTween('d', function (date) {
+                const previous = select(this).attr('d');
                 const current = linePath(date);
                 return interpolatePath(previous, current);
               })
@@ -125,27 +125,27 @@ function Minigraphs({ timeseries, date: timelineDate }) {
         );
 
       svg
-        .selectAll("circle")
+        .selectAll('circle')
         .data(T ? [dates[T - 1]] : [])
         .join(
           (enter) =>
             enter
-              .append("circle")
-              .attr("fill", color)
-              .attr("r", 2.5)
-              .attr("cx", (date) => xScale(parseSaudiaDate(date)))
-              .attr("cy", (date) =>
+              .append('circle')
+              .attr('fill', color)
+              .attr('r', 2.5)
+              .attr('cx', (date) => xScale(parseSaudiaDate(date)))
+              .attr('cy', (date) =>
                 yScale(getMinigraphStatistic(date, statistic))
               )
-              .style("opacity", 0)
+              .style('opacity', 0)
               .call((enter) =>
                 enter
                   .transition()
                   .delay(2100)
                   .duration(500)
-                  .style("opacity", 1)
-                  .attr("cx", (date) => xScale(parseSaudiaDate(date)))
-                  .attr("cy", (date) =>
+                  .style('opacity', 1)
+                  .attr('cx', (date) => xScale(parseSaudiaDate(date)))
+                  .attr('cy', (date) =>
                     yScale(getMinigraphStatistic(date, statistic))
                   )
               ),
@@ -153,11 +153,11 @@ function Minigraphs({ timeseries, date: timelineDate }) {
             update
               .transition()
               .duration(500)
-              .attr("cx", (date) => xScale(parseSaudiaDate(date)))
-              .attr("cy", (date) =>
+              .attr('cx', (date) => xScale(parseSaudiaDate(date)))
+              .attr('cy', (date) =>
                 yScale(getMinigraphStatistic(date, statistic))
               )
-              .style("opacity", 1)
+              .style('opacity', 1)
               .selection()
         );
     });
@@ -168,9 +168,9 @@ function Minigraphs({ timeseries, date: timelineDate }) {
       {LEVEL_STATISTICS.map((statistic, index) => (
         <div
           key={statistic}
-          className={classnames("svg-parent")}
+          className={classnames('svg-parent')}
           ref={index === 0 ? wrapperRef : null}
-          style={{ width: `calc(${100 / LEVEL_STATISTICS.length}%)` }}
+          style={{width: `calc(${100 / LEVEL_STATISTICS.length}%)`}}
         >
           <svg
             ref={(el) => {

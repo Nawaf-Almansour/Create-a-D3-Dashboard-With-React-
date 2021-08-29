@@ -5,60 +5,61 @@ import {
   DISTRICT_TEST_END_DATE,
   MAP_VIEWS,
   TESTED_EXPIRING_DAYS,
+  PRIMARY_STATISTICS,
   UNKNOWN_DISTRICT_KEY,
-} from "../constants";
-import useIsVisible from "../hooks/useIsVisible";
-import useStickySWR from "../hooks/useStickySWR";
+} from '../constants';
+import useIsVisible from '../hooks/useIsVisible';
+import useStickySWR from '../hooks/useStickySWR';
 import {
   getStatistic,
   fetcher,
   retry,
-  parseSaudiaDate, formatDateObjSaudia,
-} from "../utils/commonFunctions";
+  parseSaudiaDate,
+  formatDateObjSaudia,
+} from '../utils/commonFunctions';
 
-import classnames from "classnames";
-import { addDays, formatISO, max } from "date-fns";
-import { useMemo, useRef, useState, lazy, Suspense } from "react";
-import { Helmet } from "react-helmet";
-import { useLocation } from "react-router-dom";
-import { useLocalStorage, useSessionStorage, useWindowSize } from "react-use";
+import classnames from 'classnames';
+import {addDays, formatISO, max} from 'date-fns';
+import {useMemo, useRef, useState, lazy, Suspense} from 'react';
+import {Helmet} from 'react-helmet';
+import {useLocation} from 'react-router-dom';
+import {useLocalStorage, useSessionStorage, useWindowSize} from 'react-use';
 
-const Actions = lazy(() => retry(() => import("./Actions")));
-const MapSwitcher = lazy(() => retry(() => import("./MapSwitcher")));
-const Level = lazy(() => retry(() => import("./Level")));
-const Minigraphs = lazy(() => retry(() => import("./Minigraphs")));
-const StateHeader = lazy(() => retry(() => import("./StateHeader")));
-const MapExplorer = lazy(() => retry(() => import("./MapExplorer")));
+const Actions = lazy(() => retry(() => import('./Actions')));
+const MapSwitcher = lazy(() => retry(() => import('./MapSwitcher')));
+const Level = lazy(() => retry(() => import('./Level')));
+const Minigraphs = lazy(() => retry(() => import('./Minigraphs')));
+const StateHeader = lazy(() => retry(() => import('./StateHeader')));
+const MapExplorer = lazy(() => retry(() => import('./MapExplorer')));
 
 function Home() {
   const [regionHighlighted, setRegionHighlighted] = useState({
-    stateCode: "TT",
+    stateCode: 'TT',
     districtName: null,
   });
-  const [anchor, setAnchor] = useLocalStorage("anchor", null);
-  const [expandTable] = useLocalStorage("expandTable", false);
+  const [anchor, setAnchor] = useLocalStorage('anchor', null);
+  const [expandTable] = useLocalStorage('expandTable', false);
 
   const [mapStatistic, setMapStatistic] = useSessionStorage(
-    "mapStatistic",
-    "active"
+    'mapStatistic',
+    'active'
   );
 
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState('');
   const location = useLocation();
 
-  const [mapView, setMapView] = useLocalStorage("mapView", MAP_VIEWS.DISTRICTS);
+  const [mapView, setMapView] = useLocalStorage('mapView', MAP_VIEWS.DISTRICTS);
 
-  const hideDistrictData = date !== "" && date < DISTRICT_START_DATE;
+  const hideDistrictData = date !== '' && date < DISTRICT_START_DATE;
   const hideDistrictTestData =
-    date === "" ||
+    date === '' ||
     date >
       formatISO(
         addDays(parseSaudiaDate(DISTRICT_TEST_END_DATE), TESTED_EXPIRING_DAYS),
-        { representation: "date" }
+        {representation: 'date'}
       );
 
-
-  const { data: timeseries } = useStickySWR(
+  const {data: timeseries} = useStickySWR(
     `${DATA_API_ROOT}/timeseries.min.json`,
     fetcher,
     {
@@ -67,8 +68,8 @@ function Home() {
     }
   );
 
-  const { data } = useStickySWR(
-    `${DATA_API_ROOT}/data${date ? `-${date}` : ""}.min.json`,
+  const {data} = useStickySWR(
+    `${DATA_API_ROOT}/data${date ? `-${date}` : ''}.min.json`,
     fetcher,
     {
       revalidateOnMount: true,
@@ -78,27 +79,27 @@ function Home() {
 
   const homeRightElement = useRef();
   const isVisible = useIsVisible(homeRightElement);
-  const { width } = useWindowSize();
+  const {width} = useWindowSize();
 
   const hideVaccinated =
-    getStatistic(data?.["TT"], "total", "vaccinated") === 0;
+    getStatistic(data?.['TT'], 'total', 'vaccinated') === 0;
 
   const lastDataDate = useMemo(() => {
     const updatedDates = [
-      data?.["TT"]?.meta?.date,
-      data?.["TT"]?.meta?.tested?.date,
-      data?.["TT"]?.meta?.vaccinated?.date,
+      data?.['TT']?.meta?.date,
+      data?.['TT']?.meta?.tested?.date,
+      data?.['TT']?.meta?.vaccinated?.date,
     ].filter((date) => date);
     return updatedDates.length > 0
       ? formatISO(max(updatedDates.map((date) => parseSaudiaDate(date))), {
-          representation: "date",
+          representation: 'date',
         })
       : null;
   }, [data]);
 
   const lastUpdatedDate = useMemo(() => {
     const updatedDates = Object.keys(data || {})
-      .map((stateCode) => data?.[stateCode]?.meta?.["last_updated"])
+      .map((stateCode) => data?.[stateCode]?.meta?.['last_updated'])
       .filter((datetime) => datetime);
     return updatedDates.length > 0
       ? formatDateObjSaudia(
@@ -106,6 +107,28 @@ function Home() {
         )
       : null;
   }, [data]);
+
+  const noDistrictDataStates = useMemo(
+    () =>
+      // Heuristic: All cases are in Unknown
+      Object.entries(data || {}).reduce((res, [stateCode, stateData]) => {
+        res[stateCode] = !!(
+          stateData?.districts &&
+          stateData.districts?.[UNKNOWN_DISTRICT_KEY] &&
+          PRIMARY_STATISTICS.every(
+            (statistic) =>
+              getStatistic(stateData, 'total', statistic) ===
+              getStatistic(
+                stateData.districts[UNKNOWN_DISTRICT_KEY],
+                'total',
+                statistic
+              )
+          )
+        );
+        return res;
+      }, {}),
+    [data]
+  );
 
   const noRegionHighlightedDistrictData =
     regionHighlighted?.stateCode &&
@@ -124,21 +147,21 @@ function Home() {
       </Helmet>
 
       <div className="Home">
-        <div className={classnames("home-left", { expanded: expandTable })}>
+        <div className={classnames('home-left', {expanded: expandTable})}>
           <div className="header">
             <Suspense fallback={<div />}></Suspense>
 
-            {!data && !timeseries && <div style={{ height: "60rem" }} />}
+            {!data && !timeseries && <div style={{height: '60rem'}} />}
 
             <>
-              {!timeseries && <div style={{ minHeight: "61px" }} />}
+              {!timeseries && <div style={{minHeight: '61px'}} />}
               {timeseries && (
-                <Suspense fallback={<div style={{ minHeight: "61px" }} />}>
+                <Suspense fallback={<div style={{minHeight: '61px'}} />}>
                   <Actions
                     {...{
                       date,
                       setDate,
-                      dates: Object.keys(timeseries["TT"]?.dates),
+                      dates: Object.keys(timeseries['TT']?.dates),
                       lastUpdatedDate,
                     }}
                   />
@@ -147,23 +170,23 @@ function Home() {
             </>
           </div>
 
-          <div style={{ position: "relative", marginTop: "1rem" }}>
+          <div style={{position: 'relative', marginTop: '1rem'}}>
             {data && (
-              <Suspense fallback={<div style={{ height: "50rem" }} />}>
+              <Suspense fallback={<div style={{height: '50rem'}} />}>
                 {width >= 769 && !expandTable && (
-                  <MapSwitcher {...{ mapStatistic, setMapStatistic }} />
+                  <MapSwitcher {...{mapStatistic, setMapStatistic}} />
                 )}
-                <Level data={data["TT"]} />
+                <Level data={data['TT']} />
               </Suspense>
             )}
 
             <>
-              {!timeseries && <div style={{ height: "123px" }} />}
+              {!timeseries && <div style={{height: '123px'}} />}
               {timeseries && (
-                <Suspense fallback={<div style={{ height: "123px" }} />}>
+                <Suspense fallback={<div style={{height: '123px'}} />}>
                   <Minigraphs
-                    timeseries={timeseries["TT"]?.dates}
-                    {...{ date }}
+                    timeseries={timeseries['TT']?.dates}
+                    {...{date}}
                   />
                 </Suspense>
               )}
@@ -172,25 +195,25 @@ function Home() {
         </div>
 
         <div
-          className={classnames("home-right", { expanded: expandTable })}
+          className={classnames('home-right', {expanded: expandTable})}
           ref={homeRightElement}
-          style={{ minHeight: "4rem" }}
+          style={{minHeight: '4rem'}}
         >
           {(isVisible || location.hash) && (
             <>
               {data && (
                 <div
-                  className={classnames("map-container", {
+                  className={classnames('map-container', {
                     expanded: expandTable,
                     stickied:
-                      anchor === "mapexplorer" || (expandTable && width >= 769),
+                      anchor === 'mapexplorer' || (expandTable && width >= 769),
                   })}
                 >
-                  <Suspense fallback={<div style={{ height: "50rem" }} />}>
-                    <StateHeader data={data["TT"]} stateCode={"TT"} />
+                  <Suspense fallback={<div style={{height: '50rem'}} />}>
+                    <StateHeader data={data['TT']} stateCode={'TT'} />
                     <MapExplorer
                       {...{
-                        stateCode: "TT",
+                        stateCode: 'TT',
                         data,
                         mapStatistic,
                         setMapStatistic,
@@ -214,7 +237,7 @@ function Home() {
 
               {timeseries && (
                 <Suspense
-                  fallback={<div style={{ height: "50rem" }} />}
+                  fallback={<div style={{height: '50rem'}} />}
                 ></Suspense>
               )}
             </>

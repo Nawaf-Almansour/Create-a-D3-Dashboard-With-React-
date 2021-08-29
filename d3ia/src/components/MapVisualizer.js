@@ -1,4 +1,4 @@
-import MapLegend from "./MapLegend";
+import MapLegend from './MapLegend';
 
 import {
   D3_TRANSITION_DURATION,
@@ -10,15 +10,15 @@ import {
   STATE_NAMES,
   STATISTIC_CONFIGS,
   UNKNOWN_DISTRICT_KEY,
-} from "../constants";
-import { formatNumber, spike, toTitleCase } from "../utils/commonFunctions";
+} from '../constants';
+import {formatNumber, spike, toTitleCase} from '../utils/commonFunctions';
 
-import { AlertIcon } from "@primer/octicons-react";
-import classnames from "classnames";
-import { max } from "d3-array";
-import { json } from "d3-fetch";
-import { geoIdentity, geoPath } from "d3-geo";
-import { scaleLinear, scaleSqrt, scaleSequential } from "d3-scale";
+import {AlertIcon} from '@primer/octicons-react';
+import classnames from 'classnames';
+import {max} from 'd3-array';
+import {json} from 'd3-fetch';
+import {geoIdentity, geoPath} from 'd3-geo';
+import {scaleLinear, scaleSqrt, scaleSequential} from 'd3-scale';
 import {
   interpolateReds,
   interpolateBlues,
@@ -27,33 +27,33 @@ import {
   interpolatePurples,
   interpolateOranges,
   interpolatePiYG,
-} from "d3-scale-chromatic";
-import { select } from "d3-selection";
-import { transition } from "d3-transition";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { useHistory } from "react-router-dom";
-import useSWR from "swr";
-import { feature, mesh } from "topojson-client";
+} from 'd3-scale-chromatic';
+import {select} from 'd3-selection';
+import {transition} from 'd3-transition';
+import {useCallback, useEffect, useMemo, useRef} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useHistory} from 'react-router-dom';
+import useSWR from 'swr';
+import {feature, mesh} from 'topojson-client';
 
 const colorInterpolator = (statistic) => {
-  if (statistic === "confirmed") {
+  if (statistic === 'confirmed') {
     return (t) => interpolateReds(t * 0.85);
-  } else if (statistic === "active") {
+  } else if (statistic === 'active') {
     return (t) => interpolateBlues(t * 0.85);
-  } else if (statistic === "recovered") {
+  } else if (statistic === 'recovered') {
     return (t) => interpolateGreens(t * 0.85);
-  } else if (statistic === "deceased") {
+  } else if (statistic === 'deceased') {
     return (t) => interpolateGreys(t * 0.85);
-  } else if (statistic === "tested") {
+  } else if (statistic === 'tested') {
     return (t) => interpolatePurples(t * 0.85);
   } else if (
-    statistic === "tpr" ||
-    statistic === "cfr" ||
-    statistic === "other"
+    statistic === 'tpr' ||
+    statistic === 'cfr' ||
+    statistic === 'other'
   ) {
     return (t) => interpolateOranges(t * 0.85);
-  } else if (STATISTIC_CONFIGS[statistic]?.category === "vaccinated") {
+  } else if (STATISTIC_CONFIGS[statistic]?.category === 'vaccinated') {
     return (t) => interpolatePiYG(0.15 + 0.35 * (1 - t));
   } else {
     return (t) => interpolateOranges(t * 0.85);
@@ -72,18 +72,20 @@ function MapVisualizer({
   transformStatistic,
   noDistrictData,
 }) {
-  const { t } = useTranslation();
+  const {t} = useTranslation();
   const svgRef = useRef(null);
 
   const mapMeta = MAP_META[mapCode];
   const history = useHistory();
 
-  const { data: geoData } = useSWR(
+  const {data: geoData} = useSWR(
     mapMeta.geoDataFile,
     async (file) => {
-      return await json(file);
+      const x = await json(file);
+      console.log(x)
+      return x;
     },
-    { suspense: false, revalidateOnFocus: false }
+    {suspense: false, revalidateOnFocus: false}
   );
 
   const statisticTotal = useMemo(() => {
@@ -93,7 +95,7 @@ function MapVisualizer({
   const statisticConfig = STATISTIC_CONFIGS[statistic];
 
   const strokeColor = useCallback(
-    (alpha) => (statisticConfig?.color || "#343a40") + alpha,
+    (alpha) => (statisticConfig?.color || '#343a40') + alpha,
     [statisticConfig]
   );
 
@@ -113,7 +115,7 @@ function MapVisualizer({
       const district = feature.properties.district;
       const state = feature.properties.st_nm;
       const obj = Object.assign({}, feature);
-      obj.id = `${mapCode}-${state}${district ? "-" + district : ""}`;
+      obj.id = `${mapCode}-${state}${district ? '-' + district : ''}`;
       return obj;
     });
   }, [geoData, mapCode, isDistrictView, mapViz, mapMeta]);
@@ -136,7 +138,7 @@ function MapVisualizer({
   const statisticMax = useMemo(() => {
     const stateCodes = Object.keys(data).filter(
       (stateCode) =>
-        stateCode !== "TT" && Object.keys(MAP_META).includes(stateCode)
+        stateCode !== 'TT' && Object.keys(MAP_META).includes(stateCode)
     );
 
     if (!isDistrictView) {
@@ -202,7 +204,7 @@ function MapVisualizer({
         const n = transformStatistic(
           getMapStatistic(district ? districtData : stateData)
         );
-        const color = n ? mapScale(n) : "#ffffff00";
+        const color = n ? mapScale(n) : '#ffffff00';
         return color;
       }
     },
@@ -211,7 +213,7 @@ function MapVisualizer({
 
   const populateTexts = useCallback(
     (regionSelection) => {
-      regionSelection.select("title").text((d) => {
+      regionSelection.select('title').text((d) => {
         if (mapViz !== MAP_VIZS.CHOROPLETH && !statisticConfig?.nonLinear) {
           const state = d.properties.st_nm;
           const stateCode = STATE_CODES[state];
@@ -224,7 +226,7 @@ function MapVisualizer({
           else n = getMapStatistic(stateData);
           return `${formatNumber(
             100 * (n / (statisticTotal || 0.001)),
-            "%"
+            '%'
           )} from ${toTitleCase(district ? district : state)}`;
         }
       });
@@ -238,7 +240,7 @@ function MapVisualizer({
   useEffect(() => {
     const svg = select(svgRef.current);
 
-    svg.attr("pointer-events", "auto").on("click", () => {
+    svg.attr('pointer-events', 'auto').on('click', () => {
       onceTouchedRegion.current = null;
       setRegionHighlighted({
         stateCode: mapCode,
@@ -259,25 +261,25 @@ function MapVisualizer({
     const T = transition().duration(D3_TRANSITION_DURATION);
 
     svg
-      .select(".regions")
-      .selectAll("path")
+      .select('.regions')
+      .selectAll('path')
       .data(mapViz === MAP_VIZS.CHOROPLETH ? features : [], (d) => d.id)
       .join(
         (enter) =>
           enter
-            .append("path")
-            .attr("d", path)
-            .attr("stroke-width", 1.8)
-            .attr("stroke-opacity", 0)
-            .style("cursor", "pointer")
-            .on("mouseenter", (event, d) => {
+            .append('path')
+            .attr('d', path)
+            .attr('stroke-width', 1.8)
+            .attr('stroke-opacity', 0)
+            .style('cursor', 'pointer')
+            .on('mouseenter', (event, d) => {
               if (onceTouchedRegion.current) return;
               setRegionHighlighted({
                 stateCode: STATE_CODES[d.properties.st_nm],
                 districtName: d.properties.district,
               });
             })
-            .on("pointerdown", (event, d) => {
+            .on('pointerdown', (event, d) => {
               if (onceTouchedRegion.current === d)
                 onceTouchedRegion.current = null;
               else onceTouchedRegion.current = d;
@@ -286,18 +288,18 @@ function MapVisualizer({
                 districtName: d.properties.district,
               });
             })
-            .attr("fill", "#fff0")
-            .attr("stroke", "#fff0"),
+            .attr('fill', '#fff0')
+            .attr('stroke', '#fff0'),
         (update) => update,
         (exit) =>
           exit
             .transition(T)
-            .attr("stroke", "#fff0")
-            .attr("fill", "#fff0")
+            .attr('stroke', '#fff0')
+            .attr('fill', '#fff0')
             .remove()
       )
-      .attr("pointer-events", "all")
-      .on("click", (event, d) => {
+      .attr('pointer-events', 'all')
+      .on('click', (event, d) => {
         event.stopPropagation();
         const stateCode = STATE_CODES[d.properties.st_nm];
         if (
@@ -307,18 +309,18 @@ function MapVisualizer({
         )
           return;
         // Disable pointer events till the new map is rendered
-        svg.attr("pointer-events", "none");
-        svg.select(".regions").selectAll("path").attr("pointer-events", "none");
+        svg.attr('pointer-events', 'none');
+        svg.select('.regions').selectAll('path').attr('pointer-events', 'none');
         // Switch map
         history.push(
-          `/state/${stateCode}${window.innerWidth < 769 ? "#MapExplorer" : ""}`
+          `/state/${stateCode}${window.innerWidth < 769 ? '#MapExplorer' : ''}`
         );
       })
       .call((sel) => {
         sel
           .transition(T)
-          .attr("fill", fillColor)
-          .attr("stroke", strokeColor.bind(this, ""));
+          .attr('fill', fillColor)
+          .attr('stroke', strokeColor.bind(this, ''));
       });
   }, [
     mapViz,
@@ -368,8 +370,8 @@ function MapVisualizer({
     const T = transition().duration(D3_TRANSITION_DURATION);
 
     const regionSelection = svg
-      .select(".circles")
-      .selectAll("circle")
+      .select('.circles')
+      .selectAll('circle')
       .data(
         mapViz === MAP_VIZS.BUBBLE ? sortedFeatures : [],
         (feature) => feature.id
@@ -377,21 +379,21 @@ function MapVisualizer({
       .join(
         (enter) =>
           enter
-            .append("circle")
+            .append('circle')
             .attr(
-              "transform",
+              'transform',
               (feature) => `translate(${path.centroid(feature)})`
             )
-            .attr("fill-opacity", 0.25)
-            .style("cursor", "pointer")
-            .attr("pointer-events", "all")
+            .attr('fill-opacity', 0.25)
+            .style('cursor', 'pointer')
+            .attr('pointer-events', 'all')
             .call((enter) => {
-              enter.append("title");
+              enter.append('title');
             }),
         (update) => update,
-        (exit) => exit.call((exit) => exit.transition(T).attr("r", 0).remove())
+        (exit) => exit.call((exit) => exit.transition(T).attr('r', 0).remove())
       )
-      .on("mouseenter", (event, feature) => {
+      .on('mouseenter', (event, feature) => {
         if (onceTouchedRegion.current) return;
         setRegionHighlighted({
           stateCode: STATE_CODES[feature.properties.st_nm],
@@ -400,7 +402,7 @@ function MapVisualizer({
             : feature.properties.district || UNKNOWN_DISTRICT_KEY,
         });
       })
-      .on("pointerdown", (event, feature) => {
+      .on('pointerdown', (event, feature) => {
         if (onceTouchedRegion.current === feature)
           onceTouchedRegion.current = null;
         else onceTouchedRegion.current = feature;
@@ -411,22 +413,22 @@ function MapVisualizer({
             : feature.properties.district || UNKNOWN_DISTRICT_KEY,
         });
       })
-      .on("click", (event, feature) => {
+      .on('click', (event, feature) => {
         event.stopPropagation();
         if (onceTouchedRegion.current || mapMeta.mapType === MAP_TYPES.STATE)
           return;
         history.push(
           `/state/${STATE_CODES[feature.properties.st_nm]}${
-            window.innerWidth < 769 ? "#MapExplorer" : ""
+            window.innerWidth < 769 ? '#MapExplorer' : ''
           }`
         );
       })
       .call((sel) => {
         sel
           .transition(T)
-          .attr("fill", statisticConfig.color + "70")
-          .attr("stroke", statisticConfig.color + "70")
-          .attr("r", (feature) => mapScale(feature.value));
+          .attr('fill', statisticConfig.color + '70')
+          .attr('stroke', statisticConfig.color + '70')
+          .attr('r', (feature) => mapScale(feature.value));
       });
 
     window.requestIdleCallback(() => {
@@ -452,8 +454,8 @@ function MapVisualizer({
     const T = transition().duration(D3_TRANSITION_DURATION);
 
     const regionSelection = svg
-      .select(".spikes")
-      .selectAll("path")
+      .select('.spikes')
+      .selectAll('path')
       .data(
         mapViz === MAP_VIZS.SPIKE ? sortedFeatures : [],
         (feature) => feature.id,
@@ -462,26 +464,26 @@ function MapVisualizer({
       .join(
         (enter) =>
           enter
-            .append("path")
+            .append('path')
             .attr(
-              "transform",
+              'transform',
               (feature) => `translate(${path.centroid(feature)})`
             )
-            .attr("opacity", 0)
-            .attr("fill-opacity", 0.25)
-            .style("cursor", "pointer")
-            .attr("pointer-events", "all")
-            .attr("d", spike(0))
+            .attr('opacity', 0)
+            .attr('fill-opacity', 0.25)
+            .style('cursor', 'pointer')
+            .attr('pointer-events', 'all')
+            .attr('d', spike(0))
             .call((enter) => {
-              enter.append("title");
+              enter.append('title');
             }),
         (update) => update,
         (exit) =>
           exit.call((exit) =>
-            exit.transition(T).attr("opacity", 0).attr("d", spike(0)).remove()
+            exit.transition(T).attr('opacity', 0).attr('d', spike(0)).remove()
           )
       )
-      .on("mouseenter", (event, feature) => {
+      .on('mouseenter', (event, feature) => {
         if (onceTouchedRegion.current) return;
         setRegionHighlighted({
           stateCode: STATE_CODES[feature.properties.st_nm],
@@ -490,7 +492,7 @@ function MapVisualizer({
             : feature.properties.district || UNKNOWN_DISTRICT_KEY,
         });
       })
-      .on("pointerdown", (event, feature) => {
+      .on('pointerdown', (event, feature) => {
         if (onceTouchedRegion.current === feature)
           onceTouchedRegion.current = null;
         else onceTouchedRegion.current = feature;
@@ -501,23 +503,23 @@ function MapVisualizer({
             : feature.properties.district || UNKNOWN_DISTRICT_KEY,
         });
       })
-      .on("click", (event, feature) => {
+      .on('click', (event, feature) => {
         event.stopPropagation();
         if (onceTouchedRegion.current || mapMeta.mapType === MAP_TYPES.STATE)
           return;
         history.push(
           `/state/${STATE_CODES[feature.properties.st_nm]}${
-            window.innerWidth < 769 ? "#MapExplorer" : ""
+            window.innerWidth < 769 ? '#MapExplorer' : ''
           }`
         );
       })
       .call((sel) => {
         sel
           .transition(T)
-          .attr("opacity", 1)
-          .attr("fill", statisticConfig.color + "70")
-          .attr("stroke", statisticConfig.color + "70")
-          .attr("d", (feature) => spike(mapScale(feature.value)));
+          .attr('opacity', 1)
+          .attr('fill', statisticConfig.color + '70')
+          .attr('stroke', statisticConfig.color + '70')
+          .attr('d', (feature) => spike(mapScale(feature.value)));
       });
 
     window.requestIdleCallback(() => {
@@ -561,37 +563,37 @@ function MapVisualizer({
     }
 
     svg
-      .select(".state-borders")
-      .attr("fill", "none")
-      .attr("stroke-width", 1.5)
-      .selectAll("path")
+      .select('.state-borders')
+      .attr('fill', 'none')
+      .attr('stroke-width', 1.5)
+      .selectAll('path')
       .data(meshStates, (d) => d.id)
       .join(
-        (enter) => enter.append("path").attr("d", path).attr("stroke", "#fff0"),
+        (enter) => enter.append('path').attr('d', path).attr('stroke', '#fff0'),
         (update) => update,
-        (exit) => exit.transition(T).attr("stroke", "#fff0").remove()
+        (exit) => exit.transition(T).attr('stroke', '#fff0').remove()
       )
       .transition(T)
-      .attr("stroke", strokeColor.bind(this, "40"));
+      .attr('stroke', strokeColor.bind(this, '40'));
 
     svg
-      .select(".district-borders")
-      .attr("fill", "none")
-      .attr("stroke-width", 1.5)
-      .selectAll("path")
+      .select('.district-borders')
+      .attr('fill', 'none')
+      .attr('stroke-width', 1.5)
+      .selectAll('path')
       .data(meshDistricts, (d) => d.id)
       .join(
         (enter) =>
           enter
-            .append("path")
-            .attr("d", path)
-            .attr("d", path)
-            .attr("stroke", "#fff0"),
+            .append('path')
+            .attr('d', path)
+            .attr('d', path)
+            .attr('stroke', '#fff0'),
         (update) => update,
-        (exit) => exit.transition(T).attr("stroke", "#fff0").remove()
+        (exit) => exit.transition(T).attr('stroke', '#fff0').remove()
       )
       .transition(T)
-      .attr("stroke", strokeColor.bind(this, "40"));
+      .attr('stroke', strokeColor.bind(this, '40'));
   }, [
     geoData,
     mapMeta,
@@ -613,9 +615,9 @@ function MapVisualizer({
 
     if (mapViz === MAP_VIZS.BUBBLE) {
       svg
-        .select(".circles")
-        .selectAll("circle")
-        .attr("fill-opacity", (d) => {
+        .select('.circles')
+        .selectAll('circle')
+        .attr('fill-opacity', (d) => {
           const highlighted =
             stateName === d.properties.st_nm &&
             ((!district && stateCode !== mapCode) ||
@@ -626,9 +628,9 @@ function MapVisualizer({
         });
     } else if (mapViz === MAP_VIZS.SPIKE) {
       svg
-        .select(".spikes")
-        .selectAll("path")
-        .attr("fill-opacity", (d) => {
+        .select('.spikes')
+        .selectAll('path')
+        .attr('fill-opacity', (d) => {
           const highlighted =
             stateName === d.properties.st_nm &&
             ((!district && stateCode !== mapCode) ||
@@ -639,8 +641,8 @@ function MapVisualizer({
         });
     } else {
       svg
-        .select(".regions")
-        .selectAll("path")
+        .select('.regions')
+        .selectAll('path')
         .each(function (d) {
           const highlighted =
             stateName === d.properties.st_nm &&
@@ -648,7 +650,7 @@ function MapVisualizer({
               district === d.properties?.district ||
               !isDistrictView);
           if (highlighted) this.parentNode.appendChild(this);
-          select(this).attr("stroke-opacity", highlighted ? 1 : 0);
+          select(this).attr('stroke-opacity', highlighted ? 1 : 0);
         });
     }
   }, [
@@ -681,18 +683,18 @@ function MapVisualizer({
           <g className="spikes" />
         </svg>
         {noDistrictData && statisticConfig?.hasPrimary && (
-          <div className={classnames("disclaimer", `is-${statistic}`)}>
+          <div className={classnames('disclaimer', `is-${statistic}`)}>
             <AlertIcon />
             <span>
-              {t("District-wise data not available in state bulletin")}
+              {t('District-wise data not available in state bulletin')}
             </span>
           </div>
         )}
       </div>
 
-      {mapScale && <MapLegend {...{ data, statistic, mapViz, mapScale }} />}
+      {mapScale && <MapLegend {...{data, statistic, mapViz, mapScale}} />}
 
-      <svg style={{ position: "absolute", height: 0 }}>
+      <svg style={{position: 'absolute', height: 0}}>
         <defs>
           <filter id="balance-color" colorInterpolationFilters="sRGB">
             <feColorMatrix
