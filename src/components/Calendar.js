@@ -73,7 +73,7 @@ function Calendar({ date, dates, slider }) {
   return (
     <div className="Calendar" onWheel={handleWheel} {...swipeHandlers}>
       <ReactCalendar
-        value={parseIndiaDate(date)}
+        value={parseSaudiaDate(date)}
         tileDisabled={isDateDisabled}
         {...{ minDate, maxDate, activeStartDate, view }}
         onActiveStartDateChange={handleNavigationButton}

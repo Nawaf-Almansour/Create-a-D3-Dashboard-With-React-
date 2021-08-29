@@ -3,8 +3,10 @@ import { Home, HelpCircle } from "react-feather";
 import { Link } from "react-router-dom";
 import { useTransition, animated } from "react-spring";
 import { useLockBodyScroll, usePageLeave, useWindowSize } from "react-use";
+import {useTranslation} from 'react-i18next';
 
 function Navbar({ pages, showLanguageSwitcher, setShowLanguageSwitcher }) {
+  const {t} = useTranslation();
   const [expand, setExpand] = useState(false);
 
   useLockBodyScroll(expand);
